@@ -8,7 +8,7 @@
 #   4. Define a data processor that can parse data from the data source type:
 #      see DataSource::Type::Processor and DataProcessor::Base.
 #   5. Define the rule types applicable to the data source type: see
-#      DataSource::Type::Rules and Rule::Base.
+#      DataSource::Type::HasRules and Rule::Base.
 #
 module DataSource::Type
   extend ActiveSupport::Concern
@@ -16,7 +16,7 @@ module DataSource::Type
   include ModelAttributes::Type
   include ModelAttributes::Settings
   include DataSource::Type::Processor
-  include DataSource::Type::Rules
+  include DataSource::Type::HasRules
 
   # Whitelist of demodulized names of data source classes
   TYPE_CLASS_NAMES = %w[Odk].freeze

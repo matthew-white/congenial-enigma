@@ -15,9 +15,9 @@
 # validate arguments. (At some point this last step may be automated using an
 # approach similar to ModelAttributes::Settings.)
 #
-# See also DataSource::Type::Rules for a discussion of the difference between a
-# rule type and a parameterized rule. (The word "rule" can mean either, but they
-# are two different concepts.)
+# See also DataSource::Type::HasRules for a discussion of the difference between
+# a rule type and a parameterized rule. (The word "rule" can mean either, but
+# they are two different concepts.)
 #
 class Rule::Base
   # Avoid accessing this class attribute directly: use ::title and ::with_title.

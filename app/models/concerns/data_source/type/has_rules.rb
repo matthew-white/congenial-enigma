@@ -8,7 +8,7 @@
 # fully parameterized rule, which is represented by a rule object. The word
 # "rule" can refer to either concept, similar to how the word "filter" can mean
 # either a filtering process or an application of such a process. However, this
-# module is concerned solely with rule types: you shoud read references to
+# module is concerned solely with rule types: you should read references to
 # "supported rules" as having to do with rule types. That said, in general,
 # unless specified otherwise, the term "rule" usually refers to a parameterized
 # rule: the app uses rule types in fewer places.
@@ -16,7 +16,7 @@
 # An Alert object validates that its rule type is supported by the alert's
 # associated data sources, and it also validates its rule object in other ways.
 #
-module DataSource::Type::Rules
+module DataSource::Type::HasRules
   extend ActiveSupport::Concern
 
   included do
