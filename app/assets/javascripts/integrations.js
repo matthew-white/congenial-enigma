@@ -3,14 +3,14 @@
   var TOP_SELECTOR = '#new-integration ';
 
   var Finalization = finalizationFactory('finalize-integration');
-  var RecipientListChoice = filteredChoiceFactory({
+  var RecipientListChoice = filteredChoicePanelFactory({
     id: 'choice-recipient-list',
     configuredServiceId: function() {
       return GmailAccountChoice.val();
     },
     nextElement: Finalization
   });
-  var GmailAccountChoice = choiceFactory({
+  var GmailAccountChoice = choicePanelFactory({
     id: 'choice-gmail-account',
     type: 'radio',
     nextElement: RecipientListChoice
@@ -28,12 +28,12 @@
     id: 'choices-data-destination',
     children: [DataDestinationServiceChoice, GmailChoices]
   });
-  var MessageChoice = choiceFactory({
+  var MessageChoice = choicePanelFactory({
     id: 'choice-message',
     nextElement: DataDestinationChoices,
     hidden: true
   });
-  var PatternChoice = choiceFactory({
+  var PatternChoice = choicePanelFactory({
     id: 'choice-pattern',
     nextElement: MessageChoice
   });
@@ -41,14 +41,14 @@
     id: 'choices-alert',
     children: [PatternChoice, MessageChoice]
   });
-  var FormChoice = filteredChoiceFactory({
+  var FormChoice = filteredChoicePanelFactory({
     id: 'choice-form',
     configuredServiceId: function() {
       return ServerChoice.val();
     },
     nextElement: AlertChoices
   });
-  var ServerChoice = choiceFactory({
+  var ServerChoice = choicePanelFactory({
     id: 'choice-server',
     type: 'radio',
     nextElement: FormChoice
@@ -207,7 +207,7 @@
     };
   }
 
-  function choiceFactory(options) {
+  function choicePanelFactory(options) {
     var $panel, state;
     var choice = {
       nextElement: nextElement,
@@ -382,14 +382,14 @@
     }
   }
 
-  function filteredChoiceFactory(options) {
+  function filteredChoicePanelFactory(options) {
     var filteredOptions = {
       type: 'radio',
       hidden: true,
       beforeActivate: beforeActivate
     };
     var combinedOptions = $.extend({}, options, filteredOptions);
-    return choiceFactory(combinedOptions);
+    return choicePanelFactory(combinedOptions);
 
     function updateAddPath($choice) {
       var $addAction = $choice.find('.action-add');
