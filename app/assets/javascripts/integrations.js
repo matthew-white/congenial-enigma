@@ -97,7 +97,43 @@
        /* Choice factories */
   /* ------------------------------------------------------------------------ */
 
-  // nextChoices must be a choice list.
+  /*
+  The integration wizard has multiple "steps," each of which is made up of one
+  or more "choices." Users must complete each choice before moving on to the
+  next choice and complete each step before moving on to the next step.
+
+  Choices come in different forms, but all choice objects include these methods:
+
+    nextElement()   Returns the element that follows the choice. Once the choice
+                    is completed, the element is shown. The element is usually
+                    another choice or a choice list.
+    hasDraft()      Returns true if there is draft data for the choice and false
+                    if not.
+    restoreDraft()  If there is draft data for the choice, restoreDraft()
+                    restores it, shows the next element, and returns true.
+                    Otherwise, it returns false. In many cases, restoreDraft()
+                    leaves it to the view to restore/render any draft data and
+                    simply shows the next element.
+    listen()        Adds listeners for the choice.
+  */
+
+  /*
+  serviceChoiceFactory() returns an object representing a "service choice,"
+  through which the user selects a single service. At the moment, even though a
+  service choice may show multiple services, only one service is truly supported
+  and will move the wizard forward. Options (all required):
+
+    choiceId     The HTML id of the service choice
+    serviceId    The HTML id of the supported service
+    nextChoices  The choice list that follows the service choice
+
+  serviceChoiceFactory() returns an object with the standard choice methods:
+
+    nextElement()
+    hasDraft()
+    restoreDraft()
+    listen()
+  */
   function serviceChoiceFactory(options) {
     return {
       nextElement: function() {
@@ -139,6 +175,85 @@
     };
   }
 
+  /*
+  choicePanelFactory() returns an object representation of a "choice panel," a
+  panel through which the user makes a single choice. The panel includes a form
+  with one or more fields and has one of the following states:
+
+    1. Hidden. The panel is hidden.
+    2. Active. The panel is activated and is ready for the user to make a
+       choice.
+    3. Complete. The choice has been made.
+
+  There are two types of choice panels:
+
+    1. Default
+    2. Radio. A panel with a single radio field.
+
+  Choice panels have the following actions/buttons:
+
+    1. Complete. Submits the form, thereby completing the choice. The panel
+       becomes deactivated.
+    2. Revisit. Reactivates the panel, hiding the elements that follow the
+       choice.
+    3. Add. Some panels, for example, radio panels, have an add action to add a
+       new option to the selection list.
+
+  choicePanelFactory() accepts the following options:
+
+    id              Required. The HTML id of the choice panel.
+    nextElement     Required. The element that follows the choice panel. This
+                    may be any object with show() and hide() methods.
+    type            The type of choice panel. Only 'radio' is supported.
+    hidden          Some choice panels are independently hideable: they have
+                    exposed show() and hide() methods. Other panels are nested
+                    in choice lists that determine their visibility: the panel
+                    is visible if and only if the choice list is visible. If the
+                    `hidden` option is falsy, the panel is initialized with a
+                    state of 'active' and is not independently hideable: its
+                    visibility depends on the choice list in which it is nested.
+                    Otherwise, the panel is initialized with a state of 'hidden'
+                    and has show() and hide() methods. The `hidden` option has
+                    no effect on how the panel is initially rendered: for
+                    example, if a panel is not initially hidden, it is the
+                    view's responsibility to render the panel as activated.
+    beforeActivate  A callback that is invoked before the choice panel is
+                    activated. A panel can be activated in two ways:
+
+                      1. The panel is shown via the show() method. (See option
+                         `hidden`.)
+                      2. The panel is revisited
+
+                    Note that this means that if the panel is not initially
+                    hidden, the callback is invoked only when the panel is
+                    revisited, not when it is initially rendered.
+
+  choicePanelFactory() returns an object with the following methods:
+
+    Standard choice methods
+    -----------------------
+
+    nextElement()
+    hasDraft()
+    restoreDraft()
+    listen()
+
+    Choice panels that are initially hidden
+    ---------------------------------------
+
+    show()  Shows the choice panel.
+    hide()  Hides the choice panel and the elements that follow it.
+
+    Radio choice panels
+    -------------------
+
+    val()  Returns the value of the selected radio button.
+
+    Other methods
+    -------------
+
+    state()     Returns the state of the choice panel.
+  */
   function choicePanelFactory(options) {
     var $panel, state;
     var choice = {
@@ -171,11 +286,15 @@
       return draft;
     }
 
-    // Activates select radio buttons:
-    //
-    //   1. Shows radio buttons except those with a `filtered` class
-    //   2. Selects/checks the first visible, enabled radio button
-    //
+    /*
+    Completes the activation of a radio panel:
+
+      1. Shows radio buttons except those with a `filtered` class
+      2. Selects the first visible, enabled radio button if none is selected
+         already
+      3. Shows the complete action if there is at least one visible, enabled
+         radio button
+    */
     function activateRadio() {
       $panel.find('.radio.filtered').hide();
       var $visibleRadio = $panel.find('.radio:not(.filtered)');
@@ -195,7 +314,7 @@
       1. Invokes the beforeActivate callback
       2. Activates the step title under which the panel is nested
       3. Unmutes text, including the title
-      4. Enables inputs except those with a permanently-disabled class
+      4. Enables fields except those with a permanently-disabled class
       5. Activates select radio buttons
       6. Hides the revisit action, shows the add action, and shows the complete
          action if appropriate
@@ -251,7 +370,7 @@
     Updates the panel's UI after it has been completed:
 
       1. Mutes text, including the title
-      2. Disables inputs
+      2. Disables fields
       3. Hides unchecked radio buttons
       4. Hides the add and complete actions and shows the revisit action
     */
@@ -306,6 +425,17 @@
     }
   }
 
+  /*
+  filteredChoicePanelFactory() returns a radio choice panel that is initially
+  hidden. The panel's selection list depends on a previous choice of configured
+  service: the list is filtered according to the configured service. Options
+  (all required):
+
+    id                   Passed to choicePanelFactory().
+    nextElement          Passed to choicePanelFactory().
+    configuredServiceId  Callback that returns the record ID of the selected
+                         configured service
+  */
   function filteredChoicePanelFactory(options) {
     var filteredOptions = {
       type: 'radio',
@@ -345,11 +475,55 @@
   /*
   choiceListFactory() returns a "choice list," which groups together one or more
   other choices and/or choice lists. Think of a choice list as a tree, where
-  choice lists are branches and choices are leaves. Options:
+  choice lists are branches and choices are leaves. Like a choice panel, a
+  choice list has one of the following states:
 
-    id        HTML id of the choice list element
-    children  Array of the choices and choice lists contained in the list
-              (immediate children only)
+    1. Hidden
+    2. Active
+    3. Complete
+
+  choiceListFactory() accepts the following options:
+
+    id        Required. HTML id of the choice list.
+    children  Required. Array of the choices and choice lists contained in the
+              list (immediate children only).
+    root      Most choice lists are hideable: they have exposed show() and
+              hide() methods. However, the root/topmost choice list is always
+              visible. If the `root` option is truthy, the choice list is
+              initialized with a state of 'active' and is not hideable.
+              Otherwise, the choice list is initialized with a state of 'hidden'
+              and has show() and hide() methods. The `root` option has no effect
+              on how the choice list is initially rendered: it is the view's
+              responsibility to render the choice list according to its initial
+              visibility.
+
+  choiceListFactory() returns an object with the following methods:
+
+    Standard choice methods
+    -----------------------
+
+    nextElement()   Returns the element that follows the choice list. Once the
+                    choice list is completed, the element is shown. The element
+                    is usually a choice or choice list.
+    hasDraft()      Returns true if there is draft data for the first choice of
+                    the choice list and false if not.
+    restoreDraft()  restoreDraft() restores draft data for the elements of the
+                    choice list until either it restores them all (returning
+                    true) or it encounters an element without draft data
+                    (returning false).
+    listen()        Adds listeners for the choice list.
+
+    Other properties
+    ----------------
+
+    children  The immediate children of the choice list
+    state()   Returns the state of the choice list.
+
+    Choice lists that are hideable (not root)
+    -----------------------------------------
+
+    show()  Shows the choice list.
+    hide()  Hides the choice list and the elements that follow it.
   */
   function choiceListFactory(options) {
     var $choices, hidden;
@@ -445,6 +619,7 @@
     }
   }
 
+  // Returns an object that listens for a page load, then restores the draft.
   function draftFactory(options) {
     return {
       listen: function() {
