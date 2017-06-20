@@ -18,3 +18,7 @@
 <% end %>
 
 <%= link_to 'View Your Integrations', integrations_url(url_options) %>
+
+<% if Rails.env.development? %>
+  <p style="display: none"><%= Time.now %></p>
+<% end %>
