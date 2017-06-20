@@ -4,7 +4,7 @@
           commcare medic_mobile opensrp rapidpro].each.with_index do |service, i| %>
       <% if @draft.data_source_configured_service_id.blank? ||
             service == :odk %>
-        <%= content_tag :div, class: 'service col-md-3',
+        <%= content_tag :div, class: 'service col-xs-3',
                         id: "service-#{service}" do %>
           <p>
             <%= link_to image_tag("services/#{service}"), '#', role: :button %>
@@ -16,7 +16,7 @@
 
   <div class="choices" id="choices-odk">
     <% has_draft = @draft.data_source_configured_service_id.present? %>
-    <%= content_tag :div, class: 'panel panel-default choice',
+    <%= content_tag :div, class: 'panel panel-default choice choice-radio',
                     id: 'choice-server', data: { has_draft: has_draft } do %>
       <div class="panel-heading">
         <h5 class="panel-title"><span>Choose a Server</span></h5>
@@ -52,7 +52,7 @@
       </form>
     <% end %>
 
-    <%= content_tag :div, class: 'panel panel-default choice',
+    <%= content_tag :div, class: 'panel panel-default choice choice-radio',
                     id: 'choice-form',
                     data: { has_draft: @draft.data_source_id.present? } do %>
       <div class="panel-heading">

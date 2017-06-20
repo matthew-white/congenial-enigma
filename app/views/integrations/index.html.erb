@@ -18,16 +18,13 @@
       <%= link_to icon('plus', 'Add Integration'), new_integration_path,
                   role: :button, class: 'btn btn-success' %>
     </div>
-    <table class="table table-hover">
+    <table class="table">
       <thead>
         <tr>
-          <th><!-- Actions --></th>
           <th>Integration</th>
           <th>Server</th>
           <th>Form</th>
           <th>Field</th>
-          <th>Rule</th>
-          <th>Number</th>
         </tr>
       </thead>
       <tbody>
@@ -35,12 +32,6 @@
           <% source = source_alert.data_source %>
           <% alert = source_alert.alert %>
           <tr>
-            <td class="col-md-1 member-actions">
-              <!-- Actions -->
-              <%= link_to icon('trash-o', class: 'text-danger'),
-                          integration_path(alert.id), method: :delete,
-                          data: { confirm: 'Are you sure you want to delete the alert?' } %>
-            </td>
             <td>
               <!-- Integration -->
               Alert
@@ -57,16 +48,51 @@
             </td>
             <td>
               <!-- Field -->
-              <%= alert.rule.field_name %>
+              <code><%= alert.rule.field_name %></code>
             </td>
-            <td>
-              <!-- Rule -->
-              <%= alert.rule.class.title %>
-            </td>
-            <td>
-              <!-- Number -->
-              <%= number_with_precision alert.rule.value, delimiter: ',',
-                                        strip_insignificant_zeros: true %>
+          </tr>
+          <tr class="integration-details">
+            <td colspan="4">
+              <div class="well">
+                <p>
+                  If a data point <%= alert.rule.class.title %>
+                  <% if alert.rule.class < Rules::Odk::NumericOperator %>
+                    <% number = number_with_precision(alert.rule.value,
+                                                      delimiter: ',',
+                                                      strip_insignificant_zeros: true) %>
+                    <strong><%= number %></strong>,
+                  <% elsif alert.rule.class < Rules::Odk::StringOperator %>
+                    <% if alert.rule.class == Rules::Odk::RegexpMatch %>
+                      <code><%= alert.rule.value %></code>
+                    <% else %>
+                      <strong>&ldquo;<%= alert.rule.value %>&rdquo;</strong>
+                    <% end %>
+
+                    <% if alert.rule.case_sensitive? %>
+                      (case-sensitive),
+                    <% else %>
+                      (case-insensitive),
+                    <% end %>
+                  <% else %>
+                    <% raise NotImplementedError %>
+                  <% end %>
+
+                  send the following message to
+                  <%= link_to alert.data_destination.name,
+                              edit_configured_service_data_destination_path(alert.data_destination.configured_service, alert.data_destination) %>
+                  from the
+                  <% terms = alert.data_destination.configured_service.class.terminology %>
+                  <%= terms.service %> <%= terms.configured_service %>
+                  <%= link_to alert.data_destination.configured_service.name,
+                              edit_configured_service_path(alert.data_destination.configured_service) %>:
+                </p>
+                <blockquote><p><%= alert.message %></p></blockquote>
+
+                <%= link_to icon('trash-o', 'Delete'),
+                            integration_path(alert.id), method: :delete,
+                            role: :button, class: 'btn btn-danger',
+                            data: { confirm: 'Are you sure you want to delete the alert?' } %>
+              </div>
             </td>
           </tr>
         <% end %>

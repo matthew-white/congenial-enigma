@@ -1,38 +1,94 @@
 <div class="choices" id="choices-alert">
-  <% has_draft = @draft.field_name.present? && @draft.rule_type.present? &&
-                 @draft.rule_value.present? %>
   <%= content_tag :div, class: 'panel panel-default choice',
-                  id: 'choice-pattern', data: { has_draft: has_draft } do %>
+                  id: 'choice-pattern',
+                  data: { has_draft: @draft.rule_type.present? } do %>
     <div class="panel-heading">
       <h5 class="panel-title"><span>Choose a Pattern</span></h5>
     </div>
     <div class="panel-body">
-      <form class="form-inline form-paragraph">
-        <div class="row">
-          <div class="form-group col-md-12">
-            Send an alert about the field
-            <%= text_field_tag 'field_name', @draft.field_name,
-                               placeholder: 'Field name', required: true,
-                               class: 'form-control form-inline-input-7' %>
+      <form>
+        <div class="form-group">
+          <%= label_tag 'rule_field_name', 'Send an alert about the field' %>
+          <div class="row">
+            <div class="col-xs-7">
+              <%= text_field_tag 'rule_field_name',
+                                 @draft.rule_data&.[]('field_name'),
+                                 placeholder: 'Field name', required: true,
+                                 class: 'form-control' %>
+            </div>
           </div>
         </div>
-        <div class="row">
-          <div class="form-group col-md-12">
-            If a data point&hellip;
-            <%# TODO: Have these options support data sources other than ODK. %>
-            <% options = options_from_collection_for_select(DataSources::Odk.supported_rules,
-                                                            :name, :title,
-                                                            @draft.rule_type) %>
-            <%= select_tag 'rule_class', options, class: 'form-control',
-                           data: { draft_name: :rule_type } %>
-            <%= number_field_tag 'rule_value', @draft.rule_value,
-                                 placeholder: 'Number', required: true,
-                                 step: :any, class: 'form-control' %>
+        <div class="form-group" id="rule_class_name_form_group">
+          <%= label_tag 'rule_class_name',
+                        'If a data point&hellip;'.html_safe %>
+          <div class="row">
+            <div class="col-xs-6">
+              <%= content_tag :select, id: :rule_class_name,
+                              name: :rule_class_name, class: 'form-control',
+                              required: true,
+                              data: { draft_name: :rule_type } do %>
+                <% first = true %>
+                <optgroup label="Numeric rules">
+                  <% DataSources::Odk.supported_rules.each do |rule_class| %>
+                    <% if rule_class < Rules::Odk::StringOperator && first %>
+                      </optgroup>
+                      <optgroup label="Text rules">
+                      <% first = false %>
+                    <% end %>
+
+                    <%= content_tag :option, rule_class.title.upcase_first,
+                                    value: rule_class.name,
+                                    selected: rule_class.name == @draft.rule_type,
+                                    data: { fields: dynamic_rule_fields(rule_class) } %>
+                  <% end %>
+                </optgroup>
+              <% end %>
+            </div>
           </div>
+        </div>
+        <div class="form-group dynamic-rule-field">
+          <div class="row">
+            <div class="col-xs-6">
+              <%= number_field_tag 'numeric_rule_value',
+                                   draft_rule_value(Rules::Odk::NumericOperator),
+                                   placeholder: 'Number', step: :any,
+                                   class: 'form-control',
+                                   data: { rule_data_name: 'value',
+                                   required: true } %>
+            </div>
+          </div>
+        </div>
+        <div class="form-group dynamic-rule-field">
+          <div class="row">
+            <div class="col-xs-6">
+              <% value = draft_rule_value(Rules::Odk::StringOperator,
+                                          except: Rules::Odk::RegexpMatch) %>
+              <%= text_field_tag 'string_rule_value', value,
+                                 placeholder: 'Text', class: 'form-control',
+                                 data: { rule_data_name: 'value',
+                                 required: true } %>
+            </div>
+          </div>
+        </div>
+        <div class="form-group dynamic-rule-field">
+          <%= text_field_tag 'regexp_match_value',
+                             draft_rule_value(Rules::Odk::RegexpMatch),
+                             placeholder: 'Regular expression',
+                             class: 'form-control',
+                             data: { rule_data_name: 'value',
+                             required: true } %>
+        </div>
+        <div class="checkbox dynamic-rule-field">
+          <label>
+            <%= hidden_field_tag 'rule_case_sensitive', false %>
+            <%= check_box_tag 'rule_case_sensitive', true,
+                              @draft.rule_data&.[]('case_sensitive') == 'true' %>
+            Case-sensitive
+          </label>
         </div>
         <%= button_tag 'Use This Pattern',
                        class: 'btn btn-primary action action-complete' %>
-        <div class="action action-revisit" style="display:none">
+        <div class="action action-revisit">
           <%= link_to icon('pencil'), '#', role: :button %>
           <%= link_to 'Change', '#', role: :button %>
         </div>
@@ -49,12 +105,12 @@
     <div class="panel-body">
       <form class="form-inline form-paragraph">
         <div class="row">
-          <div class="form-paragraph-text col-md-12">
+          <div class="form-paragraph-text col-xs-12">
             Choose a message to send with the alert.
           </div>
         </div>
         <div class="row">
-          <div class="form-group col-md-12">
+          <div class="form-group col-xs-12">
             <%= text_area_tag 'alert_message', @draft.message,
                               placeholder: 'Message', required: true,
                               class: 'form-control form-inline-input-12',

@@ -1,6 +1,6 @@
 (function() {
   // Adding a trailing space for ease of combining with other selectors.
-  var TOP_SELECTOR = '#new-integration ';
+  var TOP_SELECTOR = '#integrations-new ';
 
   var Finalization = finalizationFactory('finalize-integration');
   var RecipientListChoice = filteredChoicePanelFactory({
@@ -33,7 +33,7 @@
     nextElement: DataDestinationChoices,
     hidden: true
   });
-  var PatternChoice = choicePanelFactory({
+  var PatternChoice = patternChoiceFactory({
     id: 'choice-pattern',
     nextElement: MessageChoice
   });
@@ -72,6 +72,7 @@
     DataSourceChoices,
     AlertChoices,
     DataDestinationChoices,
+    Finalization,
     Draft
   ]);
 
@@ -286,26 +287,52 @@
       return draft;
     }
 
-    /*
-    Completes the activation of a radio panel:
+    function toggleMutedText(state) {
+      $panel.toggleClass('text-muted', state);
+      $panel.find('.panel-title span').toggleClass('text-muted', state);
+    }
 
-      1. Shows radio buttons except those with a `filtered` class
-      2. Selects the first visible, enabled radio button if none is selected
-         already
-      3. Shows the complete action if there is at least one visible, enabled
-         radio button
-    */
-    function activateRadio() {
-      $panel.find('.radio.filtered').hide();
-      var $visibleRadio = $panel.find('.radio:not(.filtered)');
-      var $enabledRadio = $visibleRadio
-                             .find('input:not(.permanently-disabled)')
-                             .closest('.radio');
-      $enabledRadio.removeClass('disabled');
-      if ($enabledRadio.find(':checked').length === 0)
-        $enabledRadio.find('input').first().prop('checked', true);
-      $panel.find('.action-complete').toggle($enabledRadio.length > 0);
-      $visibleRadio.show();
+    function activateControls() {
+      var radioSelection = {};
+      var $enabled = $panel.find('input, select, textarea').filter(function() {
+        var visible, $control = $(this);
+        var permanentlyDisabled = $control.hasClass('permanently-disabled');
+        var tagName = $control.prop('tagName').toLowerCase();
+        var type = tagName === 'input' ? $control.attr('type') : tagName;
+        if (type === 'radio') {
+          var $radio = $control.closest('.radio');
+          visible = !$radio.hasClass('filtered');
+          $radio.toggle(visible);
+
+          if (visible && !permanentlyDisabled) {
+            $radio.removeClass('disabled');
+            var name = $control.attr('name');
+            if (!radioSelection[name] || $control.prop('checked'))
+              radioSelection[name] = $control.attr('id');
+          }
+        }
+        else {
+          visible = true;
+          if (type === 'checkbox' && !permanentlyDisabled)
+            $control.closest('.checkbox').removeClass('disabled');
+        }
+        if (visible && !permanentlyDisabled)
+          $control.prop('disabled', false);
+        return visible && !permanentlyDisabled;
+      });
+
+      for (var name in radioSelection) {
+        if (radioSelection.hasOwnProperty(name))
+          $('#' + radioSelection[name]).prop('checked', true);
+      }
+
+      return $enabled;
+    }
+
+    function activateActions($enabledControls) {
+      $panel.find('.action-add').show();
+      $panel.find('.action-complete').toggle($enabledControls.length > 0);
+      $panel.find('.action-revisit').hide();
     }
 
     /*
@@ -314,9 +341,11 @@
       1. Invokes the beforeActivate callback
       2. Activates the step title under which the panel is nested
       3. Unmutes text, including the title
-      4. Enables fields except those with a permanently-disabled class
-      5. Activates select radio buttons
-      6. Hides the revisit action, shows the add action, and shows the complete
+      4. Shows radio buttons except those with a `filtered` class
+      5. Enables fields except those with a permanently-disabled class
+      6. Selects the first visible, enabled radio button if one is not selected
+         already
+      7. Hides the revisit action, shows the add action, and shows the complete
          action if appropriate
     */
     function activate() {
@@ -324,18 +353,10 @@
         return;
       if (options.beforeActivate)
         options.beforeActivate($panel);
-
       activateStepTitle($panel);
-      $panel.removeClass('text-muted');
-      $panel.find('.panel-title span').removeClass('text-muted');
-      var $fields = $panel.find('input, select, textarea');
-      $fields.filter(':not(.permanently-disabled)').prop('disabled', false);
-      if (options.type === 'radio')
-        activateRadio();
-      else
-        $panel.find('.action-complete').show();
-      $panel.find('.action-add').show();
-      $panel.find('.action-revisit').hide();
+      toggleMutedText(false);
+      var $enabledControls = activateControls();
+      activateActions($enabledControls);
     }
 
     function show() {
@@ -354,11 +375,30 @@
       state = 'hidden';
     }
 
+    // Returns the fields to save to the draft.
+    function draftFields() {
+      return $panel.find('input, select, textarea').filter(function() {
+        var $field = $(this), tagName = $field.prop('tagName').toLowerCase();
+        var type = tagName === 'input' ? $field.attr('type') : tagName;
+        if (type === 'hidden') {
+          // Always include hidden fields unless they are associated with a
+          // hidden or checked checkbox.
+          var selector = 'input[type="checkbox"]' +
+            '[id="' + $field.attr('id') + '"]';
+          var $checkbox = $panel.find(selector);
+          return $checkbox.length === 0 ||
+            ($checkbox.is(':visible') && !$checkbox.prop('checked'));
+        }
+        if ((type === 'radio' || type === 'checkbox') &&
+          !$field.prop('checked'))
+          return false;
+        return $field.is(':visible');
+      });
+    }
+
     function saveDraft() {
       var data = {};
-      var selector = 'input[type="radio"]:checked, input[type!="radio"], ' +
-        'select, textarea';
-      $panel.find(selector).each(function() {
+      draftFields().each(function() {
         var $el = $(this);
         var name = $el.data('draftName') || $el.attr('name');
         data[name] = $el.val();
@@ -375,11 +415,10 @@
       4. Hides the add and complete actions and shows the revisit action
     */
     function updateUIAfterComplete() {
-      $panel.addClass('text-muted');
-      $panel.find('.panel-title span').addClass('text-muted');
+      toggleMutedText(true);
       $panel.find('input[type="radio"]:not(:checked)').closest('.radio').hide();
       $panel.find('input, select, textarea').prop('disabled', true);
-      $panel.find(':checked').closest('.radio').addClass('disabled');
+      $panel.find(':checked').closest('.checkbox, .radio').addClass('disabled');
       $panel.find('.action-add, .action-complete').hide();
       $panel.find('.action-revisit').show();
     }
@@ -464,6 +503,53 @@
     function beforeActivate($choice) {
       updateAddPath($choice);
       filterRadio($choice);
+    }
+  }
+
+  function patternChoiceFactory(options) {
+    var choice = choicePanelFactory(options);
+    var listen = choice.listen;
+    var $ruleClassName, $dynamicFields;
+    return $.extend(choice, {
+      listen: function() {
+        listen();
+        $(document)
+          .on('turbolinks:load', function() {
+            $ruleClassName = $('#rule_class_name');
+            $dynamicFields = dynamicFields();
+            toggleDynamicFields(true);
+          })
+          .on('change', '#rule_class_name', function() {
+            toggleDynamicFields(false);
+            $dynamicFields = dynamicFields();
+            toggleDynamicFields(true);
+          });
+      },
+      dynamicFields: function() {
+        return $dynamicFields;
+      }
+    });
+
+    // Supports number, text, checkbox, and hidden inputs.
+    function dynamicFields() {
+      var data = $ruleClassName.find('option:checked').data('fields');
+      var selector;
+      if (!data)
+        selector = '';
+      else {
+        var selectors = data.split(/\s+/).map(function(id) {
+          // Using the [id=some_id] selector rather than #some_id, because
+          // checkbox fields may have associated hidden fields with the same id.
+          return '[id="' + id + '"]';
+        });
+        selector = selectors.join(',');
+      }
+      return $(selector);
+    }
+
+    function toggleDynamicFields(state) {
+      $dynamicFields.closest('.form-group, .checkbox').toggle(state);
+      $dynamicFields.filter('[data-required]').prop('required', state);
     }
   }
 
@@ -583,10 +669,11 @@
   }
 
   function finalizationFactory(id) {
-    var selector = '#' + id;
+    var $finalization, ruleDataFields;
     return {
       show: show,
-      hide: hide
+      hide: hide,
+      listen: listen
     };
 
     function updatePushUrl() {
@@ -598,11 +685,28 @@
       $pushUrl.text(url);
     }
 
+    function copyRuleFields() {
+      $('#rule_type').val($('#rule_class_name').val());
+
+      $('#rule_data_field_name').val($('#rule_field_name').val());
+      ruleDataFields = ['rule_data_field_name'];
+
+      PatternChoice.dynamicFields().each(function() {
+        var $field = $(this);
+        if ($field.attr('type') === 'checkbox' && !$field.prop('checked'))
+          return;
+        var name = $field.data('ruleDataName');
+        if (!name)
+          name = $field.attr('name').replace('rule_', '');
+        var finalizationId = 'rule_data_' + name;
+        $('#' + finalizationId).val($field.val());
+        ruleDataFields.push(finalizationId);
+      });
+    }
+
     function copyFields() {
       $('#data_source_id').val(FormChoice.val());
-      $('#rule_data_field_name').val($('#field_name').val());
-      $('#rule_type').val($('#rule_class').val());
-      $('#rule_data_value').val($('#rule_value').val());
+      copyRuleFields();
       $('#message').val($('#alert_message').val());
       $('#data_destination_id').val(RecipientListChoice.val());
     }
@@ -610,12 +714,29 @@
     function show() {
       updatePushUrl();
       copyFields();
-      activateStepTitle($(selector));
-      $(selector).show();
+      activateStepTitle($finalization);
+      $finalization.show();
     }
 
     function hide() {
-      $(selector).hide();
+      $finalization.hide();
+    }
+
+    // Removes non-applicable rule data fields.
+    function removeRuleDataFields() {
+      $finalization.find('input').each(function() {
+        var $field = $(this), id = $field.attr('id');
+        if (id && id.startsWith('rule_data_') && !ruleDataFields.includes(id))
+          $field.remove();
+      });
+    }
+
+    function listen() {
+      $(document)
+        .on('turbolinks:load', function() {
+          $finalization = $('#' + id);
+        })
+        .on('submit', '#' + id, removeRuleDataFields);
     }
   }
 

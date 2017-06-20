@@ -8,8 +8,10 @@
   </div>
 
   <%= form_tag integrations_path, method: :post do %>
-    <% %w[data_source_id rule_data[field_name] rule_type rule_data[value]
-          message data_destination_id].each do |name| %>
+    <% names = %w[data_source_id rule_data[field_name] rule_type
+                  rule_data[value] rule_data[case_sensitive] message
+                  data_destination_id] %>
+    <% names.each do |name| %>
       <%= hidden_field_tag name %>
     <% end %>
     <%= button_tag icon('plus', 'Add Integration'), class: 'btn btn-success' %>

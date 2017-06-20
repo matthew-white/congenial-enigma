@@ -50,6 +50,10 @@ class AlertDraft < ApplicationRecord
     end
   end
 
+  def rule_class
+    rule_type.present? ? rule_type.constantize : nil
+  end
+
   # Updates a set of adjacent attributes, then sets their dependent attributes
   # to nil.
   def dependably_update(attributes)

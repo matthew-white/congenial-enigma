@@ -5,7 +5,7 @@
     <% %i[gmail sms google_sheets].each.with_index do |service, i| %>
       <% if @draft.data_destination_configured_service_id.blank? ||
           service == :gmail %>
-        <%= content_tag :div, class: 'service col-md-3',
+        <%= content_tag :div, class: 'service col-xs-3',
                         id: "service-#{service}" do %>
           <p>
             <%= link_to image_tag("services/#{service}"), '#', role: :button %>
@@ -17,7 +17,7 @@
 
   <div class="choices" id="choices-gmail">
   <% has_draft = @draft.data_destination_configured_service_id.present? %>
-  <%= content_tag :div, class: 'panel panel-default choice',
+  <%= content_tag :div, class: 'panel panel-default choice choice-radio',
                   id: 'choice-gmail-account',
                   data: { has_draft: has_draft } do %>
     <div class="panel-heading">
@@ -64,7 +64,7 @@
     </div>
   <% end %>
 
-  <%= content_tag :div, class: 'panel panel-default choice',
+  <%= content_tag :div, class: 'panel panel-default choice choice-radio',
                   id: 'choice-recipient-list',
                   data: { has_draft: @draft.data_destination_id.present? } do %>
     <div class="panel-heading">

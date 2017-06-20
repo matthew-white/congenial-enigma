@@ -1,4 +1,30 @@
-#new-integration {
+#integrations-index {
+  table {
+    table-layout: fixed;
+
+    td {
+      cursor: pointer;
+    }
+
+    .integration-details {
+      display: none;
+
+      td {
+        border: none;
+      }
+
+      .well {
+        margin: 0 20px;
+      }
+
+      blockquote {
+        font-size: inherit;
+      }
+    }
+  }
+}
+
+#integrations-new {
   td:first-child {
     width: 33px;
   }
@@ -20,7 +46,7 @@
     color: #337ab7;
   }
 
-  form:not(.form-paragraph) {
+  .choice-radio {
     .action-complete {
       display: none;
     }
@@ -37,6 +63,22 @@
   #choices-alert {
     #choice-pattern {
       margin-top: 20px;
+
+      label {
+        font-weight: normal;
+      }
+
+      #rule_class_name_form_group {
+        margin-bottom: 10px;
+      }
+
+      .dynamic-rule-field {
+        display: none;
+
+        &.form-group {
+          margin-bottom: 10px;
+        }
+      }
     }
   }
 }
