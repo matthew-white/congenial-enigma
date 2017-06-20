@@ -1,5 +1,5 @@
 class DataDestinations::Gmail < DataDestination
-  with_messenger ::Messenger::Gmail
+  with_messenger Messenger::Gmail
 
   with_settings :email_list
   before_validation :normalize_email_list

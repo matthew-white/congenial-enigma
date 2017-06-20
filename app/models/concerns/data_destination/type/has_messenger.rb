@@ -1,10 +1,10 @@
-module DataDestination::Type::Messenger
+module DataDestination::Type::HasMessenger
   extend ActiveSupport::Concern
 
   included do
     class_attribute :_messenger, instance_accessor: false,
                     instance_predicate: false
-    self._messenger = ::Messenger::Logger
+    self._messenger = Messenger::Logger
   end
 
   class_methods do

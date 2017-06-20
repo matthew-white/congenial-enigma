@@ -14,7 +14,7 @@ module DataDestination::Type
 
   include ModelAttributes::Type
   include ModelAttributes::Settings
-  include DataDestination::Type::Messenger
+  include DataDestination::Type::HasMessenger
 
   # Whitelist of demodulized names of data destination classes
   TYPE_CLASS_NAMES = %w[Gmail].freeze
