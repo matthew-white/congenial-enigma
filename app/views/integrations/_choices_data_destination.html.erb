@@ -26,15 +26,17 @@
     <div class="panel-body">
       <p>Choose the Gmail account that will send the alert.</p>
       <form>
-        <% first = true %>
-        <% @destination_services.each.with_index do |service, i| %>
+        <% draft_id = @draft.data_destination_configured_service_id ||
+                      @destination_services.first&.id %>
+        <% @destination_services.each.with_index do |service| %>
           <% connected = service.safely_connected? %>
           <%= content_tag :div,
                           class: 'radio' + (!connected ? ' disabled' : '') do %>
             <label>
               <% html_class = !connected ? 'permanently-disabled' : nil %>
               <%= radio_button_tag 'data_destination_configured_service_id',
-                                   service.id, connected && first,
+                                   service.id,
+                                   service.id == draft_id && connected,
                                    class: html_class, required: true,
                                    disabled: !connected %>
               <%= content_tag :strong, service.name,
@@ -47,7 +49,6 @@
               <% end %>
             </label>
           <% end %>
-          <% first = false if connected %>
         <% end %>
 
         <p class="action action-add">
@@ -73,12 +74,13 @@
     <div class="panel-body">
       <p>Choose who will receive the alert.</p>
       <form>
-        <% @destinations.each.with_index do |destination, i| %>
+        <% draft_id = @draft.data_destination_id || @destinations.first&.id %>
+        <% @destinations.each.with_index do |destination| %>
           <%= content_tag :div, class: 'radio', data: {
                           configured_service_id: destination.configured_service_id } do %>
             <label>
               <%= radio_button_tag 'data_destination_id', destination.id,
-                                   i == 0, required: true %>
+                                   destination.id == draft_id, required: true %>
               <strong><%= destination.name %></strong>
               <%= destination.emails.join(', ') %>
             </label>
