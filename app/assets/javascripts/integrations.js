@@ -2,7 +2,6 @@
   // Adding a trailing space for ease of combining with other selectors.
   var TOP_SELECTOR = '#new-integration ';
 
-  var Draft = draftFactory();
   var Finalization = finalizationFactory('finalize-integration');
   var RecipientListChoice = filteredChoiceFactory({
     id: 'choice-recipient-list',
@@ -63,10 +62,11 @@
     serviceId: 'service-odk',
     nextChoices: ODKChoices
   });
-  var DataSourceChoices = listenerFactory([
-    DataSourceServiceChoice,
-    ODKChoices
-  ]);
+  var DataSourceChoices = choiceListFactory({
+    id: 'choices-data-source',
+    children: [DataSourceServiceChoice, ODKChoices]
+  });
+  var Draft = draftFactory({ firstElement: DataSourceChoices });
   var CongenialEnigma = listenerFactory([
     DataSourceChoices,
     AlertChoices,
@@ -450,18 +450,16 @@
     }
   }
 
-  function draftFactory() {
+  function draftFactory(options) {
     return {
       listen: function() {
-        $(document).on('turbolinks:load', restoreDraft);
+        $(document).on('turbolinks:load', function() {
+          for (var element = options.firstElement;
+               element && element.restoreDraft && element.restoreDraft();
+               element = element.nextElement())
+            ;
+        });
       }
     };
-
-    function restoreDraft() {
-      for(var el = DataSourceServiceChoice;
-          el && el.restoreDraft && el.restoreDraft();
-          el = el.nextElement())
-        ;
-    }
   }
 })();
