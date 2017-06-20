@@ -78,7 +78,7 @@
 
 
   /* ------------------------------------------------------------------------ */
-                    /* UI helper functions */
+       /* UI helper functions */
   /* ------------------------------------------------------------------------ */
 
   // Activates a step title (for example, "1 Choose a Data Source") and
@@ -93,19 +93,8 @@
 
 
   /* ------------------------------------------------------------------------ */
-                    /* component factories */
+       /* Choice factories */
   /* ------------------------------------------------------------------------ */
-
-  // Returns an object that listens by calling other listeners.
-  function listenerFactory(listeners) {
-    return {
-      listen: function() {
-        listeners.forEach(function(listener) {
-          listener.listen();
-        });
-      }
-    };
-  }
 
   // nextChoices must be a choice list.
   function serviceChoiceFactory(options) {
@@ -145,64 +134,6 @@
             $(choiceSelector + '.service:not(' + id + ')').fadeTo('fast', 0.5);
             $(id).fadeTo('fast', 1);
           });
-      }
-    };
-  }
-
-  /*
-  choiceListFactory() returns a "choice list," which groups together one or more
-  other choices and/or choice lists. Think of a choice list as a tree, where
-  choice lists are branches and choices are leaves. Options:
-
-    id        HTML id of the choice list element
-    children  Array of the choices and choice lists contained in the list
-              (immediate children only)
-  */
-  function choiceListFactory(options) {
-    var lastChild = options.children[options.children.length - 1];
-    var $choices, hidden;
-    return {
-      children: options.children,
-      nextElement: function() {
-        return lastChild.nextElement();
-      },
-      state: function() {
-        if (hidden)
-          return 'hidden';
-        return lastChild.state() === 'complete' ? 'complete' : 'active';
-      },
-      hasDraft: function() {
-        return options.children[0].hasDraft();
-      },
-      restoreDraft: function() {
-        for (var i = 0; i < options.children.length; i++) {
-          if (!options.children[i].restoreDraft())
-            return false;
-        }
-        return true;
-      },
-      show: function() {
-        $choices.show();
-        hidden = false;
-        if (this.state() === 'complete')
-          this.nextElement().show();
-        else
-          activateStepTitle($choices);
-        hidden = false;
-      },
-      hide: function() {
-        this.nextElement().hide();
-        $choices.hide();
-        hidden = true;
-      },
-      listen: function() {
-        $(document).on('turbolinks:load', function() {
-          $choices = $('#' + options.id);
-          hidden = true;
-        });
-        options.children.forEach(function(child) {
-          child.listen();
-        });
       }
     };
   }
@@ -413,6 +344,69 @@
     }
   }
 
+
+  /* ------------------------------------------------------------------------ */
+       /* Other component factories */
+  /* ------------------------------------------------------------------------ */
+
+  /*
+  choiceListFactory() returns a "choice list," which groups together one or more
+  other choices and/or choice lists. Think of a choice list as a tree, where
+  choice lists are branches and choices are leaves. Options:
+
+    id        HTML id of the choice list element
+    children  Array of the choices and choice lists contained in the list
+              (immediate children only)
+  */
+  function choiceListFactory(options) {
+    var lastChild = options.children[options.children.length - 1];
+    var $choices, hidden;
+    return {
+      children: options.children,
+      nextElement: function() {
+        return lastChild.nextElement();
+      },
+      state: function() {
+        if (hidden)
+          return 'hidden';
+        return lastChild.state() === 'complete' ? 'complete' : 'active';
+      },
+      hasDraft: function() {
+        return options.children[0].hasDraft();
+      },
+      restoreDraft: function() {
+        for (var i = 0; i < options.children.length; i++) {
+          if (!options.children[i].restoreDraft())
+            return false;
+        }
+        return true;
+      },
+      show: function() {
+        $choices.show();
+        hidden = false;
+        if (this.state() === 'complete')
+          this.nextElement().show();
+        else
+          activateStepTitle($choices);
+        hidden = false;
+      },
+      hide: function() {
+        this.nextElement().hide();
+        $choices.hide();
+        hidden = true;
+      },
+      listen: function() {
+        $(document).on('turbolinks:load', function() {
+          $choices = $('#' + options.id);
+          hidden = true;
+        });
+        options.children.forEach(function(child) {
+          child.listen();
+        });
+      }
+    };
+  }
+
   function finalizationFactory(id) {
     var selector = '#' + id;
     return {
@@ -458,6 +452,17 @@
                element && element.restoreDraft && element.restoreDraft();
                element = element.nextElement())
             ;
+        });
+      }
+    };
+  }
+
+  // Returns an object that listens by calling other listeners.
+  function listenerFactory(listeners) {
+    return {
+      listen: function() {
+        listeners.forEach(function(listener) {
+          listener.listen();
         });
       }
     };
