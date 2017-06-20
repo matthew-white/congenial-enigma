@@ -1,6 +1,7 @@
 (function() {
   // Adding a trailing space for ease of combining with other selectors.
-  var topSelector = '#new-integration ';
+  var TOP_SELECTOR = '#new-integration ';
+
   var Draft = draftFactory();
   var Finalization = finalizationFactory('finalize-integration');
   var RecipientListChoice = filteredChoiceFactory({
@@ -85,7 +86,7 @@
   function activateStepTitle($descendant) {
     var $h4 = $descendant.closest('tr').find('h4');
     if ($h4.hasClass('text-muted')) {
-      $(topSelector + '> tbody > tr h4').addClass('text-muted');
+      $(TOP_SELECTOR + '> tbody > tr h4').addClass('text-muted');
       $h4.removeClass('text-muted');
     }
   }
@@ -123,8 +124,8 @@
       },
       listen: function() {
         // Adding a trailing space for ease of combining with other selectors.
-        var choiceSelector = topSelector + '#' + options.choiceId + ' ';
-        var serviceSelector = topSelector + '#' + options.serviceId + ' ';
+        var choiceSelector = TOP_SELECTOR + '#' + options.choiceId + ' ';
+        var serviceSelector = TOP_SELECTOR + '#' + options.serviceId + ' ';
         var otherServicesSelector = choiceSelector +
           '.service:not(#' + options.serviceId + ') ';
         $(document)
@@ -364,7 +365,7 @@
 
     function listen() {
       // Adding a trailing space for ease of combining with other selectors.
-      var selector = topSelector + '#' + options.id + ' ';
+      var selector = TOP_SELECTOR + '#' + options.id + ' ';
       $(document)
         .on('turbolinks:load', function() {
           $panel = $(selector);
