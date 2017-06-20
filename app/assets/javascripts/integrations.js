@@ -18,16 +18,16 @@
   });
   var GmailChoices = choiceListFactory({
     id: 'choices-gmail',
-    choices: [GmailAccountChoice, RecipientListChoice],
+    children: [GmailAccountChoice, RecipientListChoice]
   });
   var DataDestinationServiceChoice = serviceChoiceFactory({
     choiceId: 'choice-data-destination-service',
     serviceId: 'service-gmail',
-    nextElement: GmailChoices
+    nextChoices: GmailChoices
   });
   var DataDestinationChoices = choiceListFactory({
     id: 'choices-data-destination',
-    choices: [DataDestinationServiceChoice, GmailChoices]
+    children: [DataDestinationServiceChoice, GmailChoices]
   });
   var MessageChoice = choiceFactory({
     id: 'choice-message',
@@ -40,7 +40,7 @@
   });
   var AlertChoices = choiceListFactory({
     id: 'choices-alert',
-    choices: [PatternChoice, MessageChoice]
+    children: [PatternChoice, MessageChoice]
   });
   var FormChoice = filteredChoiceFactory({
     id: 'choice-form',
@@ -56,12 +56,12 @@
   });
   var ODKChoices = choiceListFactory({
     id: 'choices-odk',
-    choices: [ServerChoice, FormChoice]
+    children: [ServerChoice, FormChoice]
   });
   var DataSourceServiceChoice = serviceChoiceFactory({
     choiceId: 'choice-data-source-service',
     serviceId: 'service-odk',
-    nextElement: ODKChoices
+    nextChoices: ODKChoices
   });
   var DataSourceChoices = listenerFactory([
     DataSourceServiceChoice,
@@ -107,19 +107,19 @@
     };
   }
 
-  // nextElement must be a choice list.
+  // nextChoices must be a choice list.
   function serviceChoiceFactory(options) {
     return {
       nextElement: function() {
-        return options.nextElement;
+        return options.nextChoices;
       },
       hasDraft: function() {
-        return options.nextElement.choices[0].hasDraft();
+        return options.nextChoices.children[0].hasDraft();
       },
       restoreDraft: function() {
         var draft = this.hasDraft();
         if (draft)
-          options.nextElement.show();
+          options.nextChoices.show();
         return draft;
       },
       listen: function() {
@@ -133,13 +133,13 @@
             e.preventDefault();
             $(otherServicesSelector).fadeTo('slow', 0, function() {
               $(this).remove();
-              options.nextElement.show();
+              options.nextChoices.show();
             });
             $(serviceSelector).fadeTo('slow', 1);
           })
           .on('click', otherServicesSelector, function(e) {
             e.preventDefault();
-            options.nextElement.hide();
+            options.nextChoices.hide();
             activateStepTitle($(choiceSelector));
             var id = '#' + $(this).attr('id');
             $(choiceSelector + '.service:not(' + id + ')').fadeTo('fast', 0.5);
@@ -154,29 +154,29 @@
   other choices and/or choice lists. Think of a choice list as a tree, where
   choice lists are branches and choices are leaves. Options:
 
-    id       HTML id of the choice list element
-    choices  Array of the choices and choice lists contained in the list
-             (immediate children only)
+    id        HTML id of the choice list element
+    children  Array of the choices and choice lists contained in the list
+              (immediate children only)
   */
   function choiceListFactory(options) {
-    var lastChoice = options.choices[options.choices.length - 1];
+    var lastChild = options.children[options.children.length - 1];
     var $choices, hidden;
     return {
-      choices: options.choices,
+      children: options.children,
       nextElement: function() {
-        return lastChoice.nextElement();
+        return lastChild.nextElement();
       },
       state: function() {
         if (hidden)
           return 'hidden';
-        return lastChoice.state() === 'complete' ? 'complete' : 'active';
+        return lastChild.state() === 'complete' ? 'complete' : 'active';
       },
       hasDraft: function() {
-        return options.choices[0].hasDraft();
+        return options.children[0].hasDraft();
       },
       restoreDraft: function() {
-        for (var i = 0; i < options.choices.length; i++) {
-          if (!options.choices[i].restoreDraft())
+        for (var i = 0; i < options.children.length; i++) {
+          if (!options.children[i].restoreDraft())
             return false;
         }
         return true;
@@ -200,8 +200,8 @@
           $choices = $('#' + options.id);
           hidden = true;
         });
-        options.choices.forEach(function(choice) {
-          choice.listen();
+        options.children.forEach(function(child) {
+          child.listen();
         });
       }
     };
