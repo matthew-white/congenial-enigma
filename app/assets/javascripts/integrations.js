@@ -90,69 +90,6 @@
     }
   }
 
-  /*
-  Updates a choice panel after it has been completed:
-
-    1. Mutes text, including the title
-    2. Disables inputs
-    3. Hides unchecked radio buttons
-    4. Hides the add and complete actions and shows the revisit action
-  */
-  function completePanel($panel) {
-    $panel.addClass('text-muted');
-    $panel.find('.panel-title span').addClass('text-muted');
-    $panel.find('input[type="radio"]:not(:checked)').closest('.radio').hide();
-    $panel.find('input, select, textarea').prop('disabled', true);
-    $panel.find(':checked').closest('.radio').addClass('disabled');
-    $panel.find('.action-add, .action-complete').hide();
-    $panel.find('.action-revisit').show();
-  }
-
-  // Activates select radio buttons:
-  //
-  //   1. Shows radio buttons except those with a `filtered` class
-  //   2. Selects/checks the first visible, enabled radio button
-  //
-  function activateRadio($panel) {
-    $panel.find('.radio.filtered').hide();
-    var $visibleRadio = $panel.find('.radio:not(.filtered)');
-    var $enabledRadio = $visibleRadio
-                           .find('input:not(.permanently-disabled)')
-                           .closest('.radio');
-    if ($enabledRadio.length > 0) {
-      $enabledRadio.removeClass('disabled');
-      if ($enabledRadio.find(':checked').length === 0)
-        $enabledRadio.find('input').first().prop('checked', true);
-      $panel.find('.action-complete').show();
-    }
-    $visibleRadio.show();
-  }
-
-  /*
-  activatePanel() updates a choice panel after it has been activated: a choice
-  is activated after a previous choice is completed or if it is revisited.
-  activatePanel() makes these updates:
-
-    1. Unmutes text, including the title
-    2. Enables inputs except those with a permanently-disabled class
-    3. Activates select radio buttons
-    4. Hides the revisit action and shows the add and complete actions
-    5. Activates the step title under which the choice is nested
-  */
-  function activatePanel($panel) {
-    activateStepTitle($panel);
-    $panel.removeClass('text-muted');
-    $panel.find('.panel-title span').removeClass('text-muted');
-    var $input = $panel.find('input, select, textarea');
-    $input.filter(':not(.permanently-disabled)').prop('disabled', false);
-    if ($panel.find('form:not(.form-paragraph)').length > 0)
-      activateRadio($panel);
-    else
-      $panel.find('.action-complete').show();
-    $panel.find('.action-add').show();
-    $panel.find('.action-revisit').hide();
-  }
-
 
   /* ------------------------------------------------------------------------ */
                     /* component factories */
@@ -307,12 +244,54 @@
       return draft;
     }
 
+    // Activates select radio buttons:
+    //
+    //   1. Shows radio buttons except those with a `filtered` class
+    //   2. Selects/checks the first visible, enabled radio button
+    //
+    function activateRadio() {
+      $panel.find('.radio.filtered').hide();
+      var $visibleRadio = $panel.find('.radio:not(.filtered)');
+      var $enabledRadio = $visibleRadio
+                             .find('input:not(.permanently-disabled)')
+                             .closest('.radio');
+      if ($enabledRadio.length > 0) {
+        $enabledRadio.removeClass('disabled');
+        if ($enabledRadio.find(':checked').length === 0)
+          $enabledRadio.find('input').first().prop('checked', true);
+        $panel.find('.action-complete').show();
+      }
+      $visibleRadio.show();
+    }
+
+    /*
+    Activates the panel by making the following changes:
+
+      1. Invokes the beforeActivate callback
+      2. Activates the step title under which the panel is nested
+      3. Unmutes text, including the title
+      4. Enables inputs except those with a permanently-disabled class
+      5. Activates select radio buttons
+      6. Hides the revisit action, shows the add action, and shows the complete
+         action if appropriate
+    */
     function activate() {
       if (state === 'active')
         return;
       if (options.beforeActivate)
         options.beforeActivate($panel);
-      activatePanel($panel);
+
+      activateStepTitle($panel);
+      $panel.removeClass('text-muted');
+      $panel.find('.panel-title span').removeClass('text-muted');
+      var $input = $panel.find('input, select, textarea');
+      $input.filter(':not(.permanently-disabled)').prop('disabled', false);
+      if ($panel.find('form:not(.form-paragraph)').length > 0)
+        activateRadio();
+      else
+        $panel.find('.action-complete').show();
+      $panel.find('.action-add').show();
+      $panel.find('.action-revisit').hide();
     }
 
     function show() {
@@ -343,12 +322,30 @@
       $.post('/integrations/save_draft', data);
     }
 
+    /*
+    Updates the panel's UI after it has been completed:
+
+      1. Mutes text, including the title
+      2. Disables inputs
+      3. Hides unchecked radio buttons
+      4. Hides the add and complete actions and shows the revisit action
+    */
+    function updateUIAfterComplete() {
+      $panel.addClass('text-muted');
+      $panel.find('.panel-title span').addClass('text-muted');
+      $panel.find('input[type="radio"]:not(:checked)').closest('.radio').hide();
+      $panel.find('input, select, textarea').prop('disabled', true);
+      $panel.find(':checked').closest('.radio').addClass('disabled');
+      $panel.find('.action-add, .action-complete').hide();
+      $panel.find('.action-revisit').show();
+    }
+
     function complete(skipDraftSave) {
       if (state !== 'active')
         return;
       if (!skipDraftSave)
         saveDraft();
-      completePanel($panel);
+      updateUIAfterComplete();
       state = 'complete';
       nextElement().show();
     }
