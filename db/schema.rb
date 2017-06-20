@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170508082655) do
+ActiveRecord::Schema.define(version: 20170605205000) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -18,15 +18,14 @@ ActiveRecord::Schema.define(version: 20170508082655) do
   create_table "alert_drafts", force: :cascade do |t|
     t.integer  "data_source_configured_service_id"
     t.integer  "data_source_id"
-    t.text     "field_name"
     t.text     "rule_type"
-    t.decimal  "rule_value"
     t.text     "message"
     t.integer  "data_destination_configured_service_id"
     t.integer  "data_destination_id"
     t.integer  "row_count_constraint",                   default: 0
     t.datetime "created_at",                                         null: false
     t.datetime "updated_at",                                         null: false
+    t.jsonb    "rule_data"
     t.index ["row_count_constraint"], name: "index_alert_drafts_on_row_count_constraint", unique: true, using: :btree
   end
 

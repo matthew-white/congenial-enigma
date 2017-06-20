@@ -8,16 +8,15 @@ class AlertDraft < ApplicationRecord
   validate :rule_must_be_supported
 
   # The order of ATTRIBUTES matters: an attribute can be updated only if all
-  # previous attributes are present. For example, :data_source_id can be updated
-  # only if :data_source_configured_service_id is present: see
+  # previous attributes are set. For example, :data_source_id can be updated
+  # only if :data_source_configured_service_id is set: see
   # #validate_dependencies. If one attribute follows another, it is "dependent"
-  # on that attribute, as it can be updated only if the other is present.
+  # on that attribute, as it can be updated only if the other is set.
   ATTRIBUTES = %i[
     data_source_configured_service_id
     data_source_id
-    field_name
     rule_type
-    rule_value
+    rule_data
     message
     data_destination_configured_service_id
     data_destination_id
@@ -83,8 +82,8 @@ class AlertDraft < ApplicationRecord
     1.upto(ATTRIBUTES.size - 1) do |i|
       current_attribute = ATTRIBUTES[i]
       current_value = read_attribute(current_attribute)
-      if previous_value.blank? && current_value.present?
-        errors.add current_attribute, "has a blank dependency"
+      if previous_value.nil? && !current_value.nil?
+        errors.add current_attribute, "has a nil dependency"
         return
       end
       previous_value = current_value
