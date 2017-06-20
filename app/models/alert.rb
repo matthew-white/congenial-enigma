@@ -6,6 +6,7 @@ class Alert < ApplicationRecord
   validates :data_destination, presence: true
 
   validate :rule_must_be_supported
+  validate :rule_data_must_be_well_structured
   validate :rule_must_instantiate
 
   validates :message, presence: true
@@ -56,20 +57,62 @@ class Alert < ApplicationRecord
 
   protected
 
+  def supported_rule?
+    data_sources.distinct.pluck(:type).each do |source_type|
+      supported_rules = source_type.constantize.supported_rules
+      if supported_rules.none? { |rule_class| rule_class.name == rule_type }
+        return false
+      end
+    end
+    true
+  end
+
   # #rule_must_be_supported validates that the rule type is supported by each of
   # the alert's data sources. It implicitly validates that rule_type is the name
   # of a Rule::Base subclass.
   def rule_must_be_supported
-    data_sources.distinct.pluck(:type).each do |source_type|
-      supported_rules = source_type.constantize.supported_rules
-      if supported_rules.none? { |rule_class| rule_class.name == rule_type }
-        errors.add :rule_type, "is not supported by one or more of the alert’s data sources"
-        return
-      end
+    unless supported_rule?
+      errors.add :rule_type, 'is not supported by one or more of the alert’s data sources'
     end
   end
 
+  # #valid_rule_data_structure? returns true if rule_data is well-structured and
+  # false if not. rule_data must be a Hash whose keys and non-Enumerable values
+  # are String. It may store Hash and Array values, but they must have a similar
+  # structure: keys and non-Enumerable values/elements must be String, including
+  # recursively.
+  def valid_rule_data_structure?
+    return false unless rule_data.is_a? Hash
+    # Depth-first search
+    stack = [rule_data]
+    while stack.any?
+      element = stack.pop
+      if element.is_a? Hash
+        element.each do |key, value|
+          return false unless key.is_a? String
+          stack << value
+        end
+      elsif element.is_a? Array
+        stack.concat element
+      else
+        return false unless element.is_a? String
+      end
+    end
+    true
+  end
+
+  def rule_data_must_be_well_structured
+    unless valid_rule_data_structure?
+      errors.add :rule_data, 'has an invalid structure'
+    end
+  end
+
+  def safe_to_instantiate_rule?
+    supported_rule? && valid_rule_data_structure?
+  end
+
   def rule_must_instantiate
+    return unless safe_to_instantiate_rule?
     begin
       reload_rule
     rescue => e

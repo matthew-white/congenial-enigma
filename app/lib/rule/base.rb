@@ -10,10 +10,10 @@
 #
 # The Alert model instantiates Rule::Base objects by passing a Hash as keyword
 # arguments. Thus, the constructor of a Rule::Base subclass must accept keyword
-# arguments. The Alert model passes String scalars: non-Enumerable elements of
-# the Hash are String. It is the constructor's responsibility to parse and
-# validate arguments. (At some point this last step may be automated using an
-# approach similar to ModelAttributes::Settings.)
+# arguments. The Alert model passes String scalars: non-Enumerable values of the
+# Hash are String. It is the constructor's responsibility to parse and validate
+# arguments. (At some point this last step may be automated using an approach
+# similar to ModelAttributes::Settings.)
 #
 # See also DataSource::Type::HasRules for a discussion of the difference between
 # a rule type and a parameterized rule. (The word "rule" can mean either, but

@@ -5,20 +5,22 @@ class AlertDraft < ApplicationRecord
   # validate :data_source_must_match_configured_service
   # validate :data_destination_must_match_configured_service
 
+  validate :rule_must_be_supported
+
   # The order of ATTRIBUTES matters: an attribute can be updated only if all
   # previous attributes are present. For example, :data_source_id can be updated
   # only if :data_source_configured_service_id is present: see
   # #validate_dependencies. If one attribute follows another, it is "dependent"
   # on that attribute, as it can be updated only if the other is present.
-  ATTRIBUTES = [
-    :data_source_configured_service_id,
-    :data_source_id,
-    :field_name,
-    :rule_type,
-    :rule_value,
-    :message,
-    :data_destination_configured_service_id,
-    :data_destination_id
+  ATTRIBUTES = %i[
+    data_source_configured_service_id
+    data_source_id
+    field_name
+    rule_type
+    rule_value
+    message
+    data_destination_configured_service_id
+    data_destination_id
   ].freeze
 
   def data_source_configured_service
@@ -42,7 +44,11 @@ class AlertDraft < ApplicationRecord
   end
 
   def data_destination
-    data_destination.present? ? DataDestination.find(data_destination_id) : nil
+    if data_destination_id.present?
+      DataDestination.find(data_destination_id)
+    else
+      nil
+    end
   end
 
   # Updates a set of adjacent attributes, then sets their dependent attributes
@@ -102,6 +108,18 @@ class AlertDraft < ApplicationRecord
     unless data_destination_configured_service_id ==
            destination.configured_service_id
       errors.add :data_destination_id, 'must match configured_service'
+    end
+  end
+
+  def rule_must_be_supported
+    return if rule_type.nil?
+    is_supported = DataSource.type_classes.any? do |data_source_class|
+      data_source_class.supported_rules.any? do |rule_class|
+        rule_class.name == rule_type
+      end
+    end
+    unless is_supported
+      errors.add :rule_type, 'is not supported'
     end
   end
 end

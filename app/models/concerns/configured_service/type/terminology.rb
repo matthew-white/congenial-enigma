@@ -45,8 +45,8 @@ module ConfiguredService::Type::Terminology
     private
 
     def clone_superclass_terminology
-      # The class's terminology are the same object as the terminology of its
-      # superclass if and only if the class's terminology have not been cloned
+      # The class's terminology is the same object as the terminology of its
+      # superclass if and only if the class's terminology has not been cloned
       # yet.
       return unless _terminology.equal? superclass._terminology
       # The class inherits its superclass's terminology.
