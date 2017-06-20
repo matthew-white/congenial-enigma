@@ -5,7 +5,12 @@ class DataSources::Odk < DataSource
   with_rules [
     ::Rules::Odk::NumericEquality,
     ::Rules::Odk::GreaterThan,
-    ::Rules::Odk::LessThan
+    ::Rules::Odk::LessThan,
+    ::Rules::Odk::StringEquality,
+    ::Rules::Odk::Contain,
+    ::Rules::Odk::StartWith,
+    ::Rules::Odk::EndWith,
+    ::Rules::Odk::RegexpMatch
   ]
 
   alias_method :server, :configured_service

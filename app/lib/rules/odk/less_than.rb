@@ -1,5 +1,5 @@
 class Rules::Odk::LessThan < Rules::Odk::NumericOperator
-  with_title 'Is Less Than'
+  with_title 'is less than'
 
   protected
 

@@ -1,5 +1,5 @@
 class Rules::Odk::NumericEquality < Rules::Odk::NumericOperator
-  with_title 'Is Exactly'
+  with_title 'is equal to the number'
 
   protected
 

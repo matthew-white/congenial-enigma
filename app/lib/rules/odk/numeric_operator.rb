@@ -8,7 +8,7 @@ class Rules::Odk::NumericOperator < Rule::Base
 
   def test(submission)
     test = TestResult.new
-    unless submission.key?(field_name)
+    unless submission.key? field_name
       return test.with_error "The submission does not include data for the field #{field_name}. Does the form include this field?"
     end
     submission_value = submission[field_name]
