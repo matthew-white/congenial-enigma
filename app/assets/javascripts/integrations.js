@@ -64,7 +64,8 @@
   });
   var DataSourceChoices = choiceListFactory({
     id: 'choices-data-source',
-    children: [DataSourceServiceChoice, ODKChoices]
+    children: [DataSourceServiceChoice, ODKChoices],
+    root: true
   });
   var Draft = draftFactory({ firstElement: DataSourceChoices });
   var CongenialEnigma = listenerFactory([
@@ -73,8 +74,8 @@
     DataDestinationChoices,
     Draft
   ]);
+
   CongenialEnigma.listen();
-  return;
 
 
   /* ------------------------------------------------------------------------ */
@@ -142,11 +143,9 @@
     var $panel, state;
     var choice = {
       nextElement: nextElement,
-      state: state,
+      state: function() { return state; },
       hasDraft: hasDraft,
       restoreDraft: restoreDraft,
-      complete: complete,
-      revisit: revisit,
       listen: listen
     };
     if (options.type === 'radio')
@@ -159,10 +158,6 @@
 
     function nextElement() {
       return options.nextElement;
-    }
-
-    function state() {
-      return state;
     }
 
     function hasDraft() {
@@ -187,12 +182,10 @@
       var $enabledRadio = $visibleRadio
                              .find('input:not(.permanently-disabled)')
                              .closest('.radio');
-      if ($enabledRadio.length > 0) {
-        $enabledRadio.removeClass('disabled');
-        if ($enabledRadio.find(':checked').length === 0)
-          $enabledRadio.find('input').first().prop('checked', true);
-        $panel.find('.action-complete').show();
-      }
+      $enabledRadio.removeClass('disabled');
+      if ($enabledRadio.find(':checked').length === 0)
+        $enabledRadio.find('input').first().prop('checked', true);
+      $panel.find('.action-complete').toggle($enabledRadio.length > 0);
       $visibleRadio.show();
     }
 
@@ -216,9 +209,9 @@
       activateStepTitle($panel);
       $panel.removeClass('text-muted');
       $panel.find('.panel-title span').removeClass('text-muted');
-      var $input = $panel.find('input, select, textarea');
-      $input.filter(':not(.permanently-disabled)').prop('disabled', false);
-      if ($panel.find('form:not(.form-paragraph)').length > 0)
+      var $fields = $panel.find('input, select, textarea');
+      $fields.filter(':not(.permanently-disabled)').prop('disabled', false);
+      if (options.type === 'radio')
         activateRadio();
       else
         $panel.find('.action-complete').show();
@@ -359,9 +352,9 @@
               (immediate children only)
   */
   function choiceListFactory(options) {
-    var lastChild = options.children[options.children.length - 1];
     var $choices, hidden;
-    return {
+    var lastChild = options.children[options.children.length - 1];
+    var list = {
       children: options.children,
       nextElement: function() {
         return lastChild.nextElement();
@@ -381,30 +374,38 @@
         }
         return true;
       },
-      show: function() {
-        $choices.show();
-        hidden = false;
-        if (this.state() === 'complete')
-          this.nextElement().show();
-        else
-          activateStepTitle($choices);
-        hidden = false;
-      },
-      hide: function() {
-        this.nextElement().hide();
-        $choices.hide();
-        hidden = true;
-      },
       listen: function() {
         $(document).on('turbolinks:load', function() {
           $choices = $('#' + options.id);
-          hidden = true;
+          hidden = !options.root;
         });
         options.children.forEach(function(child) {
           child.listen();
         });
       }
     };
+    if (!options.root) {
+      $.extend(list, {
+        show: function() {
+          if (!hidden)
+            return;
+          $choices.show();
+          hidden = false;
+          if (this.state() === 'complete')
+            this.nextElement().show();
+          else
+            activateStepTitle($choices);
+        },
+        hide: function() {
+          if (hidden)
+            return;
+          this.nextElement().hide();
+          $choices.hide();
+          hidden = true;
+        }
+      });
+    }
+    return list;
   }
 
   function finalizationFactory(id) {
@@ -435,7 +436,7 @@
     function show() {
       updatePushUrl();
       copyFields();
-      activateStepTitle($('#choices-data-destination'));
+      activateStepTitle($(selector));
       $(selector).show();
     }
 
